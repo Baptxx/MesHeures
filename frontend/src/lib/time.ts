@@ -108,3 +108,54 @@ export function getWeekDays(dateStr: string): string[] {
     return localDateStr(dd)
   })
 }
+
+export function getMonthWeeks(dateStr: string): { monday: string; days: string[]; week: number }[] {
+  const d = new Date(dateStr + 'T00:00:00')
+  const year = d.getFullYear()
+  const month = d.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  const firstDayOfWeek = firstDay.getDay() || 7
+  const cur = new Date(firstDay)
+  cur.setDate(firstDay.getDate() - firstDayOfWeek + 1)
+  const weeks: { monday: string; days: string[]; week: number }[] = []
+  while (cur <= lastDay) {
+    const monday = localDateStr(cur)
+    const days = Array.from({ length: 5 }, (_, i) => {
+      const dd = new Date(cur)
+      dd.setDate(cur.getDate() + i)
+      return localDateStr(dd)
+    })
+    weeks.push({ monday, days, week: getWeekInfo(monday).week })
+    cur.setDate(cur.getDate() + 7)
+  }
+  return weeks
+}
+
+export function formatDay(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00')
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
+}
+
+export function currentMonthLabel(): string {
+  return new Date().toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
+}
+
+export function currentYear(): number {
+  return new Date().getFullYear()
+}
+
+// Retourne les 12 mois de l'année, chacun avec ses semaines de travail
+export function getYearMonths(year: number): { month: number; label: string; days: string[] }[] {
+  return Array.from({ length: 12 }, (_, m) => {
+    const firstDay = new Date(year, m, 1)
+    const lastDay = new Date(year, m + 1, 0)
+    const days: string[] = []
+    for (let d = new Date(firstDay); d <= lastDay; d.setDate(d.getDate() + 1)) {
+      const dow = d.getDay()
+      if (dow !== 0 && dow !== 6) days.push(localDateStr(new Date(d)))
+    }
+    const label = firstDay.toLocaleDateString('fr-FR', { month: 'short' })
+    return { month: m, label, days }
+  })
+}

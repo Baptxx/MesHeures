@@ -1,6 +1,8 @@
 import type { DayEntry } from './types'
 
-const BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+// En prod (Docker), VITE_API_URL='' → requêtes relatives proxifiées par nginx
+// En dev, VITE_API_URL=http://localhost:3000 ou http://192.168.x.x:3000
+const BASE = import.meta.env.VITE_API_URL ?? ''
 
 // Convertit le format snake_case de l'API vers le format camelCase du frontend
 function fromApi(row: Record<string, string>): DayEntry {
