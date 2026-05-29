@@ -6,14 +6,23 @@ services:
       - db_data:/data
     environment:
       - DB_PATH=/data/mesheures.db
+    networks:
+      - internal
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=/mesheures
     restart: unless-stopped
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
+    networks:
+      - internal
+      - proxy
+
+networks:
+  internal:
+  proxy:
+    external: true
 
 volumes:
   db_data:
