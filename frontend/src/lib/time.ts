@@ -60,8 +60,16 @@ export function isStarted(entry: DayEntry): boolean {
   return !!(entry.arrivee || entry.departMidi || entry.ariveeMidi || entry.departSoir)
 }
 
+// Formatte une Date en YYYY-MM-DD selon l'heure locale (pas UTC)
+function localDateStr(d: Date): string {
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
+}
+
 export function todayStr(): string {
-  return new Date().toISOString().slice(0, 10)
+  return localDateStr(new Date())
 }
 
 export function formatDate(dateStr: string): string {
@@ -74,6 +82,21 @@ export function formatDateShort(dateStr: string): string {
   return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+// Retourne le numéro de semaine ISO et l'année pour un date string
+export function getWeekInfo(dateStr: string): { week: number; year: number; monday: string } {
+  const d = new Date(dateStr + 'T00:00:00')
+  // Algo ISO 8601 : lundi = jour 1
+  const day = d.getDay() || 7 // dimanche devient 7
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - day + 1)
+  const thursday = new Date(monday)
+  thursday.setDate(monday.getDate() + 3)
+  const year = thursday.getFullYear()
+  const jan1 = new Date(year, 0, 1)
+  const week = Math.ceil(((monday.getTime() - jan1.getTime()) / 86400000 + jan1.getDay() + 1) / 7)
+  return { week, year, monday: localDateStr(monday) }
+}
+
 export function getWeekDays(dateStr: string): string[] {
   const d = new Date(dateStr + 'T00:00:00')
   const day = d.getDay()
@@ -82,6 +105,6 @@ export function getWeekDays(dateStr: string): string[] {
   return Array.from({ length: 5 }, (_, i) => {
     const dd = new Date(monday)
     dd.setDate(monday.getDate() + i)
-    return dd.toISOString().slice(0, 10)
+    return localDateStr(dd)
   })
 }

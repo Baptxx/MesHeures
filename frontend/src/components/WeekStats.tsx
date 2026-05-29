@@ -51,66 +51,64 @@ export function WeekStats({ entries }: Props) {
           />
         </div>
 
-        {/* Graphique en barres — hauteurs en px pour fiabilité cross-browser */}
-        <div className="relative">
-          {/* Ligne objectif */}
-          <div className="absolute left-0 right-0 border-t border-dashed border-zinc-300 dark:border-zinc-600" style={{ bottom: 24 + 2 }} />
+        {/* Graphique — 3 rangées indépendantes : durées / barres / jours */}
 
-          <div className="flex items-end gap-2" style={{ height: 80 + 24 }}>
-            {weekDays.map((date, i) => {
-              const t = weekTotals[i]
-              const isToday = date === today
-              const pct = t !== null ? Math.min(t / GOAL, 1.15) : null
-              const barPx = pct !== null ? Math.max(Math.round(pct * 80), 4) : 4
+        {/* 1. Durées au-dessus */}
+        <div className="flex gap-2 mb-1">
+          {weekTotals.map((t, i) => (
+            <div key={i} className="flex-1 text-center">
+              <span className="text-[10px] tabular-nums" style={{ color: '#a1a1aa' }}>
+                {t !== null ? fromMinutes(t) : ''}
+              </span>
+            </div>
+          ))}
+        </div>
 
-              const bgColor = pct === null
-                ? (isToday ? '#bfdbfe' : '#f4f4f5')   // blue-200 ou zinc-100
-                : pct >= 1
-                  ? '#34d399'   // emerald-400
-                  : pct >= 0.85
-                    ? '#fbbf24'  // amber-400
-                    : '#f87171'  // red-400
+        {/* 2. Zone barres — hauteur fixe 80px, ligne objectif en haut */}
+        <div className="relative flex items-end gap-2" style={{ height: 80 }}>
+          <div className="absolute inset-x-0 top-0 border-t border-dashed border-zinc-300 dark:border-zinc-600" />
+          {weekDays.map((date, i) => {
+            const t = weekTotals[i]
+            const isToday = date === today
+            const pct = t !== null ? Math.min(t / GOAL, 1) : null
+            const barPx = pct !== null ? Math.max(Math.round(pct * 80), 4) : 4
+            const bgColor = pct === null
+              ? (isToday ? '#bfdbfe' : '#e4e4e7')
+              : pct >= 1   ? '#34d399'
+              : pct >= 0.85 ? '#fbbf24'
+              :               '#f87171'
 
-              const labelColor = isToday ? '#3b82f6' : undefined
+            return (
+              <div
+                key={date}
+                className="flex-1 rounded-t-sm"
+                style={{
+                  height: barPx,
+                  backgroundColor: bgColor,
+                  opacity: t === null ? 0.4 : 1,
+                  transition: 'height 0.4s ease',
+                }}
+              />
+            )
+          })}
+        </div>
 
-              return (
-                <div key={date} className="flex-1 flex flex-col items-center" style={{ gap: 4 }}>
-                  {/* Label durée */}
-                  <span
-                    className="text-[10px] tabular-nums"
-                    style={{ color: '#a1a1aa', height: 16, display: 'flex', alignItems: 'flex-end' }}
-                  >
-                    {t !== null ? fromMinutes(t) : ''}
-                  </span>
-
-                  {/* Barre */}
-                  <div
-                    style={{
-                      width: '100%',
-                      height: barPx,
-                      backgroundColor: bgColor,
-                      borderRadius: '3px 3px 0 0',
-                      opacity: t === null ? 0.35 : 1,
-                      transition: 'height 0.4s ease, background-color 0.3s ease',
-                      alignSelf: 'flex-end',
-                    }}
-                  />
-
-                  {/* Étiquette jour */}
-                  <span
-                    className="text-[11px] font-medium"
-                    style={{ color: labelColor, height: 18, display: 'flex', alignItems: 'center' }}
-                  >
-                    {DAY_LABELS[i]}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
+        {/* 3. Étiquettes jours */}
+        <div className="flex gap-2 mt-1.5">
+          {weekDays.map((date, i) => (
+            <div key={date} className="flex-1 text-center">
+              <span
+                className="text-[11px] font-medium"
+                style={{ color: date === today ? '#3b82f6' : '#a1a1aa' }}
+              >
+                {DAY_LABELS[i]}
+              </span>
+            </div>
+          ))}
         </div>
 
         {/* Légende */}
-        <div className="flex items-center gap-4 mt-2">
+        <div className="flex items-center gap-4 mt-3">
           <LegendDot color="#34d399" label="≥ 7h" />
           <LegendDot color="#fbbf24" label="≥ 5h58" />
           <LegendDot color="#f87171" label="< 5h58" />
@@ -140,7 +138,7 @@ export function WeekStats({ entries }: Props) {
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <div className={`w-2.5 h-2.5 rounded-sm ${color}`} />
+      <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: color, flexShrink: 0 }} />
       <span className="text-[10px] text-zinc-400 dark:text-zinc-500">{label}</span>
     </div>
   )
