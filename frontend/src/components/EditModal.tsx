@@ -1,17 +1,21 @@
 import { useEffect, useState } from 'react'
 import { X, Sunrise, Coffee, Sun, Sunset } from 'lucide-react'
-import type { DayEntry, TimeField } from '@/lib/types'
+import type { DayEntry, TimeField, Absence, AbsenceType } from '@/lib/types'
 import { formatDate } from '@/lib/time'
 import { TimeInput } from './TimeInput'
+import { DayTypeSelector, type DayType } from './DayTypeSelector'
 
 interface Props {
   entry: DayEntry
+  absence?: Absence
   onSave: (updated: DayEntry) => Promise<void>
+  onSaveAbsence: (date: string, type: AbsenceType) => Promise<void>
   onClose: () => void
 }
 
-export function EditModal({ entry, onSave, onClose }: Props) {
+export function EditModal({ entry, absence, onSave, onSaveAbsence, onClose }: Props) {
   const [draft, setDraft] = useState<DayEntry>(entry)
+  const [dayType, setDayType] = useState<DayType>(absence?.type ?? 'travail')
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -25,7 +29,12 @@ export function EditModal({ entry, onSave, onClose }: Props) {
 
   const handleSave = async () => {
     setSaving(true)
-    try { await onSave(draft) } finally { setSaving(false) }
+    try {
+      if (dayType === 'travail') await onSave(draft)
+      else await onSaveAbsence(entry.date, dayType)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -55,12 +64,18 @@ export function EditModal({ entry, onSave, onClose }: Props) {
           </button>
         </div>
 
-        <div className="px-4 sm:px-6 py-4 sm:py-5 grid grid-cols-2 gap-3 sm:gap-4">
-          <TimeInput label="Arrivée" value={draft.arrivee} onChange={v => update('arrivee', v)} icon={<Sunrise className="w-3.5 h-3.5" />} />
-          <TimeInput label="Départ midi" value={draft.departMidi} onChange={v => update('departMidi', v)} icon={<Coffee className="w-3.5 h-3.5" />} />
-          <TimeInput label="Arrivée midi" value={draft.ariveeMidi} onChange={v => update('ariveeMidi', v)} icon={<Sun className="w-3.5 h-3.5" />} />
-          <TimeInput label="Départ soir" value={draft.departSoir} onChange={v => update('departSoir', v)} icon={<Sunset className="w-3.5 h-3.5" />} />
+        <div className="px-4 sm:px-6 py-4">
+          <DayTypeSelector value={dayType} onChange={setDayType} />
         </div>
+
+        {dayType === 'travail' && (
+          <div className="px-4 sm:px-6 pb-4 sm:pb-5 grid grid-cols-2 gap-3 sm:gap-4">
+            <TimeInput label="Arrivée" value={draft.arrivee} onChange={v => update('arrivee', v)} icon={<Sunrise className="w-3.5 h-3.5" />} />
+            <TimeInput label="Départ midi" value={draft.departMidi} onChange={v => update('departMidi', v)} icon={<Coffee className="w-3.5 h-3.5" />} />
+            <TimeInput label="Arrivée midi" value={draft.ariveeMidi} onChange={v => update('ariveeMidi', v)} icon={<Sun className="w-3.5 h-3.5" />} />
+            <TimeInput label="Départ soir" value={draft.departSoir} onChange={v => update('departSoir', v)} icon={<Sunset className="w-3.5 h-3.5" />} />
+          </div>
+        )}
 
         <div className="flex items-center gap-2 px-4 sm:px-6 pb-6 sm:pb-5">
           <button

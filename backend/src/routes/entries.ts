@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { stmts } from '../db.js'
+import { stmts, absenceStmts } from '../db.js'
 
 interface EntryBody {
   arrivee: string
@@ -22,14 +22,16 @@ function validateEntry(body: EntryBody): string | null {
 }
 
 export async function entriesRoutes(app: FastifyInstance) {
-  // GET /entries — toutes les entrées
-  app.get('/entries', async () => {
-    return stmts.getAll.all()
+  app.addHook('preHandler', app.authenticate)
+
+  // GET /entries — toutes les entrées de l'utilisateur connecté
+  app.get('/entries', async req => {
+    return stmts.getAll.all(req.user.sub)
   })
 
   // GET /entries/:date — une entrée
   app.get<{ Params: { date: string } }>('/entries/:date', async (req, reply) => {
-    const row = stmts.getOne.get(req.params.date)
+    const row = stmts.getOne.get(req.user.sub, req.params.date)
     if (!row) return reply.status(404).send({ error: 'Non trouvé' })
     return row
   })
@@ -45,13 +47,16 @@ export async function entriesRoutes(app: FastifyInstance) {
 
     const { date } = req.params
     const { arrivee, depart_midi, arivee_midi, depart_soir } = req.body
-    stmts.upsert.run(date, arrivee, depart_midi, arivee_midi, depart_soir)
-    return stmts.getOne.get(date)
+    const userId = req.user.sub
+    // Un jour est soit travaillé, soit absent : on nettoie l'absence éventuelle
+    absenceStmts.delete.run(userId, date)
+    stmts.upsert.run(userId, date, arrivee, depart_midi, arivee_midi, depart_soir)
+    return stmts.getOne.get(userId, date)
   })
 
   // DELETE /entries/:date
   app.delete<{ Params: { date: string } }>('/entries/:date', async (req, reply) => {
-    stmts.delete.run(req.params.date)
+    stmts.delete.run(req.user.sub, req.params.date)
     return reply.status(204).send()
   })
 }

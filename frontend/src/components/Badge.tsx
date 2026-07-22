@@ -1,5 +1,5 @@
 interface Props {
-  variant: 'complete' | 'partial' | 'empty'
+  variant: 'complete' | 'partial' | 'empty' | 'conge_paye' | 'rtt' | 'maladie' | 'autre'
 }
 
 const config = {
@@ -14,6 +14,22 @@ const config = {
   empty: {
     label: 'Non renseigné',
     className: 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
+  },
+  conge_paye: {
+    label: 'Congé payé',
+    className: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400 dark:border-blue-800',
+  },
+  rtt: {
+    label: 'RTT',
+    className: 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950 dark:text-purple-400 dark:border-purple-800',
+  },
+  maladie: {
+    label: 'Maladie',
+    className: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800',
+  },
+  autre: {
+    label: 'Autre',
+    className: 'bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700',
   },
 }
 

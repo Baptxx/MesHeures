@@ -4,7 +4,6 @@ import tailwindcss from '@tailwindcss/vite'
 import path from 'path'
 
 export default defineConfig({
-  base: '/mesheures/',
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
@@ -14,6 +13,10 @@ export default defineConfig({
   server: {
     proxy: {
       '/entries': 'http://localhost:3000',
+      '/auth': 'http://localhost:3000',
+      '/settings': 'http://localhost:3000',
+      '/absences': 'http://localhost:3000',
+      '/health': 'http://localhost:3000',
     },
   },
 })

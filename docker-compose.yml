@@ -6,6 +6,11 @@ services:
       - db_data:/data
     environment:
       - DB_PATH=/data/mesheures.db
+      - "JWT_SECRET=${JWT_SECRET:?Définissez JWT_SECRET dans un fichier .env, ex. openssl rand -hex 32}"
+      - "VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY:?Générez une paire de clés VAPID avec: docker run --rm node:22 npx web-push generate-vapid-keys}"
+      - "VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY:?Générez une paire de clés VAPID avec: docker run --rm node:22 npx web-push generate-vapid-keys}"
+      - VAPID_SUBJECT=${VAPID_SUBJECT:-mailto:bapt.hbt@gmail.com}
+      - TZ=${TZ:-Europe/Paris}
     networks:
       - internal
 
@@ -13,7 +18,7 @@ services:
     build:
       context: ./frontend
       args:
-        - VITE_API_URL=/mesheures
+        - VITE_API_URL=
     restart: unless-stopped
     networks:
       - internal

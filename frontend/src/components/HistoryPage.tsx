@@ -1,53 +1,64 @@
 import { useState, useMemo } from 'react'
 import { ChevronDown } from 'lucide-react'
-import type { DayEntry } from '@/lib/types'
+import type { DayEntry, Absence } from '@/lib/types'
 import { getWeekInfo, calcDurations, fromMinutes } from '@/lib/time'
 import { HistoryItem } from './HistoryItem'
+
+interface DayRow {
+  date: string
+  entry?: DayEntry
+  absence?: Absence
+}
 
 interface WeekGroup {
   key: string        // "2026-W21"
   label: string      // "Semaine 21 · 2026"
   monday: string
-  entries: DayEntry[]
+  rows: DayRow[]
   total: number | null
 }
 
 interface Props {
   history: DayEntry[]
-  onEdit: (entry: DayEntry) => void
-  onDelete: (date: string) => void
+  absences: Absence[]
+  onEdit: (date: string) => void
+  onDeleteEntry: (date: string) => void
+  onDeleteAbsence: (date: string) => void
 }
 
-export function HistoryPage({ history, onEdit, onDelete }: Props) {
-  // Grouper par semaine
+export function HistoryPage({ history, absences, onEdit, onDeleteEntry, onDeleteAbsence }: Props) {
+  // Fusionner entrées de travail et absences en une liste unique par date
   const weekGroups = useMemo<WeekGroup[]>(() => {
+    const rowsByDate = new Map<string, DayRow>()
+    for (const entry of history) rowsByDate.set(entry.date, { date: entry.date, entry })
+    for (const absence of absences) rowsByDate.set(absence.date, { date: absence.date, absence })
+
     const map = new Map<string, WeekGroup>()
-    for (const entry of history) {
-      const { week, year, monday } = getWeekInfo(entry.date)
+    for (const row of rowsByDate.values()) {
+      const { week, year, monday } = getWeekInfo(row.date)
       const key = `${year}-W${String(week).padStart(2, '0')}`
       if (!map.has(key)) {
         map.set(key, {
           key,
           label: `Semaine ${week}${year !== new Date().getFullYear() ? ` · ${year}` : ''}`,
           monday,
-          entries: [],
+          rows: [],
           total: null,
         })
       }
-      map.get(key)!.entries.push(entry)
+      map.get(key)!.rows.push(row)
     }
 
-    // Calculer le total de chaque semaine
     for (const group of map.values()) {
-      const totals = group.entries
-        .map(e => calcDurations(e).total)
+      const totals = group.rows
+        .map(r => r.entry ? calcDurations(r.entry).total : null)
         .filter(t => t !== null) as number[]
       group.total = totals.length > 0 ? totals.reduce((s, t) => s + t, 0) : null
-      group.entries.sort((a, b) => b.date.localeCompare(a.date))
+      group.rows.sort((a, b) => b.date.localeCompare(a.date))
     }
 
     return [...map.values()].sort((a, b) => b.monday.localeCompare(a.monday))
-  }, [history])
+  }, [history, absences])
 
   const [selectedKey, setSelectedKey] = useState<string>(() => weekGroups[0]?.key ?? '')
 
@@ -90,13 +101,17 @@ export function HistoryPage({ history, onEdit, onDelete }: Props) {
       {/* Entrées de la semaine sélectionnée */}
       {selectedGroup && (
         <div className="space-y-2">
-          {selectedGroup.entries.map(entry => (
+          {selectedGroup.rows.map(row => (
             <HistoryItem
-              key={entry.date}
-              entry={entry}
-              onEdit={() => onEdit(entry)}
+              key={row.date}
+              date={row.date}
+              entry={row.entry}
+              absence={row.absence}
+              onEdit={() => onEdit(row.date)}
               onDelete={async () => {
-                if (confirm('Supprimer cette entrée ?')) await onDelete(entry.date)
+                if (!confirm('Supprimer cette entrée ?')) return
+                if (row.absence) await onDeleteAbsence(row.date)
+                else await onDeleteEntry(row.date)
               }}
             />
           ))}
