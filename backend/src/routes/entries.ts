@@ -6,6 +6,7 @@ interface EntryBody {
   depart_midi: string
   arivee_midi: string
   depart_soir: string
+  is_remote?: boolean
 }
 
 // HH:mm or empty string
@@ -17,6 +18,9 @@ function validateEntry(body: EntryBody): string | null {
     if (typeof body[f] !== 'string' || !TIME_RE.test(body[f])) {
       return `Champ invalide : ${f}`
     }
+  }
+  if (body.is_remote !== undefined && typeof body.is_remote !== 'boolean') {
+    return 'Champ invalide : is_remote'
   }
   return null
 }
@@ -46,11 +50,11 @@ export async function entriesRoutes(app: FastifyInstance) {
     if (error) return reply.status(400).send({ error })
 
     const { date } = req.params
-    const { arrivee, depart_midi, arivee_midi, depart_soir } = req.body
+    const { arrivee, depart_midi, arivee_midi, depart_soir, is_remote } = req.body
     const userId = req.user.sub
     // Un jour est soit travaillé, soit absent : on nettoie l'absence éventuelle
     absenceStmts.delete.run(userId, date)
-    stmts.upsert.run(userId, date, arrivee, depart_midi, arivee_midi, depart_soir)
+    stmts.upsert.run(userId, date, arrivee, depart_midi, arivee_midi, depart_soir, is_remote ? 1 : 0)
     return stmts.getOne.get(userId, date)
   })
 

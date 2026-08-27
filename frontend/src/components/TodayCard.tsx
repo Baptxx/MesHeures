@@ -5,7 +5,7 @@ import { calcDurations, calcTheoreticalDeparture, isComplete, isStarted, formatD
 import { TimeInput } from './TimeInput'
 import { Badge } from './Badge'
 import { DurationRow } from './DurationRow'
-import { DayTypeSelector, DAY_TYPE_LABELS, type DayType } from './DayTypeSelector'
+import { DayTypeSelector, DAY_TYPE_LABELS, isWorkedDayType, type DayType } from './DayTypeSelector'
 
 interface Props {
   entry: DayEntry
@@ -20,19 +20,20 @@ interface Props {
 
 export function TodayCard({ entry, absence, goalMinutes, onSave, onSaveAbsence, onPrevDay, onNextDay, onGoToday }: Props) {
   const [draft, setDraft] = useState<DayEntry>(entry)
-  const [dayType, setDayType] = useState<DayType>(absence?.type ?? 'travail')
+  const [dayType, setDayType] = useState<DayType>(absence?.type ?? (entry.isRemote ? 'tt' : 'travail'))
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     setDraft(entry)
-    setDayType(absence?.type ?? 'travail')
+    setDayType(absence?.type ?? (entry.isRemote ? 'tt' : 'travail'))
   }, [entry.date])
 
-  const originalType: DayType = absence?.type ?? 'travail'
+  const originalType: DayType = absence?.type ?? (entry.isRemote ? 'tt' : 'travail')
+  const isWorkedType = isWorkedDayType(dayType)
   const isDirty =
     dayType !== originalType ||
-    (dayType === 'travail' && (
+    (isWorkedType && (
       draft.arrivee !== entry.arrivee ||
       draft.departMidi !== entry.departMidi ||
       draft.ariveeMidi !== entry.ariveeMidi ||
@@ -47,7 +48,7 @@ export function TodayCard({ entry, absence, goalMinutes, onSave, onSaveAbsence, 
   const handleSave = async () => {
     setSaving(true)
     try {
-      if (dayType === 'travail') await onSave(draft)
+      if (isWorkedType) await onSave({ ...draft, isRemote: dayType === 'tt' })
       else await onSaveAbsence(entry.date, dayType)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
@@ -58,7 +59,7 @@ export function TodayCard({ entry, absence, goalMinutes, onSave, onSaveAbsence, 
 
   const { matin, pause, apresmidi, total } = calcDurations(draft)
   const theoretical = calcTheoreticalDeparture(draft, goalMinutes)
-  const variant = dayType !== 'travail' ? dayType : isComplete(draft) ? 'complete' : isStarted(draft) ? 'partial' : 'empty'
+  const variant = !isWorkedType ? dayType : isComplete(draft) ? 'complete' : isStarted(draft) ? 'partial' : 'empty'
   const progress = total !== null ? Math.min((total / goalMinutes) * 100, 100) : 0
   const progressColor =
     progress >= 100 ? 'bg-emerald-500' : progress >= 70 ? 'bg-amber-500' : 'bg-blue-500'
@@ -105,14 +106,17 @@ export function TodayCard({ entry, absence, goalMinutes, onSave, onSaveAbsence, 
             </button>
           </div>
         </div>
-        <Badge variant={variant} />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {dayType === 'tt' && <Badge variant="tt" />}
+          <Badge variant={variant} />
+        </div>
       </div>
 
       <div className="px-4 sm:px-6 pt-4 sm:pt-4">
         <DayTypeSelector value={dayType} onChange={t => { setSaved(false); setDayType(t) }} />
       </div>
 
-      {dayType === 'travail' ? (
+      {isWorkedType ? (
         <>
           <div className="px-4 sm:px-6 py-4 sm:py-5 grid grid-cols-2 gap-3 sm:gap-4">
             <TimeInput label="Arrivée" value={draft.arrivee} onChange={v => update('arrivee', v)} icon={<Sunrise className="w-3.5 h-3.5" />} />
@@ -120,6 +124,12 @@ export function TodayCard({ entry, absence, goalMinutes, onSave, onSaveAbsence, 
             <TimeInput label="Arrivée midi" value={draft.ariveeMidi} onChange={v => update('ariveeMidi', v)} icon={<Sun className="w-3.5 h-3.5" />} />
             <TimeInput label="Départ soir" value={draft.departSoir} onChange={v => update('departSoir', v)} icon={<Sunset className="w-3.5 h-3.5" />} />
           </div>
+
+          {dayType === 'tt' && (
+            <p className="mx-4 sm:mx-6 mb-4 text-xs text-teal-700 dark:text-teal-400 bg-teal-50 dark:bg-teal-950/40 border border-teal-100 dark:border-teal-900 rounded-lg px-3 py-2">
+              En télétravail, le temps au-delà de l'objectif n'est pas crédité au solde.
+            </p>
+          )}
 
           {theoretical !== null && !isComplete(draft) && (
             <div className="mx-4 sm:mx-6 mb-4 flex items-center justify-between gap-2 px-3 sm:px-4 py-3 rounded-lg bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900">

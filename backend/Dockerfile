@@ -1,7 +1,7 @@
-FROM node:22
+FROM node:22-slim
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm install -g npm@latest && npm ci
 COPY src ./src
 RUN mkdir -p /data
 ENV DB_PATH=/data/mesheures.db

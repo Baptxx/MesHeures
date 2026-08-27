@@ -1,16 +1,22 @@
 import type { AbsenceType } from '@/lib/types'
 
-export type DayType = 'travail' | AbsenceType
+export type DayType = 'travail' | 'tt' | AbsenceType
 
 export const DAY_TYPE_LABELS: Record<DayType, string> = {
   travail: 'Travail',
+  tt: 'Télétravail',
   conge_paye: 'Congé payé',
   rtt: 'RTT',
   maladie: 'Maladie',
   autre: 'Autre',
 }
 
-const OPTIONS: DayType[] = ['travail', 'conge_paye', 'rtt', 'maladie', 'autre']
+// Types pour lesquels le jour reste "travaillé" (heures pointées, champs affichés)
+export function isWorkedDayType(t: DayType): t is 'travail' | 'tt' {
+  return t === 'travail' || t === 'tt'
+}
+
+const OPTIONS: DayType[] = ['travail', 'tt', 'conge_paye', 'rtt', 'maladie', 'autre']
 
 interface Props {
   value: DayType

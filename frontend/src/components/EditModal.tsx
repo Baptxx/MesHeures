@@ -3,7 +3,7 @@ import { X, Sunrise, Coffee, Sun, Sunset } from 'lucide-react'
 import type { DayEntry, TimeField, Absence, AbsenceType } from '@/lib/types'
 import { formatDate } from '@/lib/time'
 import { TimeInput } from './TimeInput'
-import { DayTypeSelector, type DayType } from './DayTypeSelector'
+import { DayTypeSelector, isWorkedDayType, type DayType } from './DayTypeSelector'
 
 interface Props {
   entry: DayEntry
@@ -15,8 +15,9 @@ interface Props {
 
 export function EditModal({ entry, absence, onSave, onSaveAbsence, onClose }: Props) {
   const [draft, setDraft] = useState<DayEntry>(entry)
-  const [dayType, setDayType] = useState<DayType>(absence?.type ?? 'travail')
+  const [dayType, setDayType] = useState<DayType>(absence?.type ?? (entry.isRemote ? 'tt' : 'travail'))
   const [saving, setSaving] = useState(false)
+  const isWorkedType = isWorkedDayType(dayType)
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -30,7 +31,7 @@ export function EditModal({ entry, absence, onSave, onSaveAbsence, onClose }: Pr
   const handleSave = async () => {
     setSaving(true)
     try {
-      if (dayType === 'travail') await onSave(draft)
+      if (isWorkedType) await onSave({ ...draft, isRemote: dayType === 'tt' })
       else await onSaveAbsence(entry.date, dayType)
     } finally {
       setSaving(false)
@@ -68,7 +69,7 @@ export function EditModal({ entry, absence, onSave, onSaveAbsence, onClose }: Pr
           <DayTypeSelector value={dayType} onChange={setDayType} />
         </div>
 
-        {dayType === 'travail' && (
+        {isWorkedType && (
           <div className="px-4 sm:px-6 pb-4 sm:pb-5 grid grid-cols-2 gap-3 sm:gap-4">
             <TimeInput label="Arrivée" value={draft.arrivee} onChange={v => update('arrivee', v)} icon={<Sunrise className="w-3.5 h-3.5" />} />
             <TimeInput label="Départ midi" value={draft.departMidi} onChange={v => update('departMidi', v)} icon={<Coffee className="w-3.5 h-3.5" />} />

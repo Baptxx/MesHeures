@@ -1,5 +1,5 @@
 interface Props {
-  variant: 'complete' | 'partial' | 'empty' | 'conge_paye' | 'rtt' | 'maladie' | 'autre'
+  variant: 'complete' | 'partial' | 'empty' | 'tt' | 'conge_paye' | 'rtt' | 'maladie' | 'autre'
 }
 
 const config = {
@@ -14,6 +14,10 @@ const config = {
   empty: {
     label: 'Non renseigné',
     className: 'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-400 dark:border-zinc-700',
+  },
+  tt: {
+    label: 'Télétravail',
+    className: 'bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-950 dark:text-teal-400 dark:border-teal-800',
   },
   conge_paye: {
     label: 'Congé payé',

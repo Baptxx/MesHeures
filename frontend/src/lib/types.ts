@@ -4,12 +4,13 @@ export interface DayEntry {
   departMidi: string
   ariveeMidi: string
   departSoir: string
+  isRemote: boolean // télétravail : le surplus par rapport à l'objectif n'est pas crédité
 }
 
-export type TimeField = keyof Omit<DayEntry, 'date'>
+export type TimeField = keyof Omit<DayEntry, 'date' | 'isRemote'>
 
 export function emptyEntry(date: string): DayEntry {
-  return { date, arrivee: '', departMidi: '', ariveeMidi: '', departSoir: '' }
+  return { date, arrivee: '', departMidi: '', ariveeMidi: '', departSoir: '', isRemote: false }
 }
 
 export type AbsenceType = 'conge_paye' | 'rtt' | 'maladie' | 'autre'

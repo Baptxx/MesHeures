@@ -59,13 +59,14 @@ export async function changePassword(currentPassword: string, newPassword: strin
 // ── Entries ───────────────────────────────────────────────────────────────
 
 // Convertit le format snake_case de l'API vers le format camelCase du frontend
-function fromApi(row: Record<string, string>): DayEntry {
+function fromApi(row: Record<string, string | number>): DayEntry {
   return {
-    date: row.date,
-    arrivee: row.arrivee ?? '',
-    departMidi: row.depart_midi ?? '',
-    ariveeMidi: row.arivee_midi ?? '',
-    departSoir: row.depart_soir ?? '',
+    date: row.date as string,
+    arrivee: (row.arrivee as string) ?? '',
+    departMidi: (row.depart_midi as string) ?? '',
+    ariveeMidi: (row.arivee_midi as string) ?? '',
+    departSoir: (row.depart_soir as string) ?? '',
+    isRemote: !!row.is_remote,
   }
 }
 
@@ -76,20 +77,21 @@ function toApi(entry: DayEntry) {
     depart_midi: entry.departMidi,
     arivee_midi: entry.ariveeMidi,
     depart_soir: entry.departSoir,
+    is_remote: entry.isRemote,
   }
 }
 
 export async function fetchAllEntries(): Promise<DayEntry[]> {
   const res = await apiFetch('/entries')
   if (!res.ok) throw new Error('Erreur lors du chargement')
-  const rows = await res.json() as Record<string, string>[]
+  const rows = await res.json() as Record<string, string | number>[]
   return rows.map(fromApi)
 }
 
 export async function saveEntry(entry: DayEntry): Promise<DayEntry> {
   const res = await apiFetch(`/entries/${entry.date}`, { method: 'PUT', body: JSON.stringify(toApi(entry)) })
   if (!res.ok) throw new Error('Erreur lors de la sauvegarde')
-  return fromApi(await res.json() as Record<string, string>)
+  return fromApi(await res.json() as Record<string, string | number>)
 }
 
 export async function deleteEntry(date: string): Promise<void> {

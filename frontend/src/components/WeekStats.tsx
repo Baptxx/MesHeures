@@ -3,7 +3,7 @@ import { ChevronDown } from 'lucide-react'
 import type { DayEntry, Settings, Absence } from '@/lib/types'
 import {
   calcDurations, getWeekDays, getMonthWeeks, getYearMonths, todayStr, fromMinutes, formatDay,
-  currentMonthLabel, currentYear, DAY_LETTERS, getHolidayName,
+  currentMonthLabel, currentYear, DAY_LETTERS, getHolidayName, dayDeltaContribution,
 } from '@/lib/time'
 
 const ABSENCE_COLOR = '#a78bfa' // violet-400
@@ -68,7 +68,10 @@ function WeekView({
   const weekFilled = weekTotals.filter(t => t !== null) as number[]
   const weekTotal = weekFilled.reduce((s, t) => s + t, 0)
   const weekAvg = weekFilled.length > 0 ? Math.round(weekTotal / weekFilled.length) : null
-  const weekDelta = weekTotal - workableCount * GOAL
+  const weekDelta = weekDays.reduce((sum, date, i) => {
+    if (isAbsent[i] || isHoliday[i]) return sum
+    return sum + dayDeltaContribution(weekTotals[i], GOAL, entries[date]?.isRemote ?? false)
+  }, 0)
 
   return (
     <div className="px-4 sm:px-6 pt-4 sm:pt-5 pb-4">
@@ -163,7 +166,10 @@ function MonthView({
     const workableDays = days.filter((_, i) => !isAbsent[i] && !isHoliday[i])
     const filled = totals.filter(t => t !== null) as number[]
     const total = filled.reduce((s, t) => s + t, 0)
-    const delta = total - workableDays.length * GOAL
+    const delta = days.reduce((sum, d, i) => {
+      if (isAbsent[i] || isHoliday[i]) return sum
+      return sum + dayDeltaContribution(totals[i], GOAL, entries[d]?.isRemote ?? false)
+    }, 0)
     return { week, days, totals, isAbsent, isHoliday, workableDays, filled, total, delta }
   })
 
@@ -303,7 +309,10 @@ function YearView({
     const workableDays = days.filter((_, i) => !isAbsent[i] && !isHoliday[i])
     const filled = totals.filter(t => t !== null) as number[]
     const total = filled.reduce((s, t) => s + t, 0)
-    const delta = total - workableDays.length * GOAL
+    const delta = days.reduce((sum, d, i) => {
+      if (isAbsent[i] || isHoliday[i]) return sum
+      return sum + dayDeltaContribution(totals[i], GOAL, entries[d]?.isRemote ?? false)
+    }, 0)
     return { month, label, days, workableDays, filled, total, delta }
   })
 
@@ -335,7 +344,7 @@ function YearView({
     ? Math.round(allWeekTotals.reduce((s, t) => s + t, 0) / allWeekTotals.length)
     : null
 
-  const yearDelta = yearTotal - yearFilledDays * GOAL
+  const yearDelta = monthStats.reduce((s, m) => s + m.delta, 0)
   const maxMonthTotal = Math.max(...monthStats.map(m => m.total), 1)
   const today = new Date().getMonth()
 
@@ -448,7 +457,10 @@ export function WeekSummary({ entries, absences, settings }: { entries: Record<s
   const workableCount = weekDays.filter(d => !absences[d] && !getHolidayName(d)).length
   const filled = totals.filter(t => t !== null) as number[]
   const weekTotal = filled.reduce((s, t) => s + t, 0)
-  const weekDelta = weekTotal - workableCount * settings.dailyGoalMinutes
+  const weekDelta = weekDays.reduce((sum, date, i) => {
+    if (absences[date] || getHolidayName(date)) return sum
+    return sum + dayDeltaContribution(totals[i], settings.dailyGoalMinutes, entries[date]?.isRemote ?? false)
+  }, 0)
   const weekAvg = filled.length > 0 ? Math.round(weekTotal / filled.length) : null
 
   if (filled.length === 0 && workableCount === weekDays.length) return null

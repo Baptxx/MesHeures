@@ -24,6 +24,7 @@ export function HistoryItem({ date, entry, absence, onEdit, onDelete }: Props) {
             {formatDate(date)}
           </span>
           <Badge variant={variant} />
+          {entry?.isRemote && !absence && <Badge variant="tt" />}
         </div>
         <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs text-zinc-400 dark:text-zinc-500">
           <span className="tabular-nums">{formatDateShort(date)}</span>

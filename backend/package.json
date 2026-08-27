@@ -27,5 +27,12 @@
     "@types/web-push": "^3.6.4",
     "tsx": "^4.22.3",
     "typescript": "^6.0.3"
+  },
+  "overrides": {
+    "find-my-way": "^9.7.0"
+  },
+  "allowScripts": {
+    "better-sqlite3@12.10.0": true,
+    "esbuild@0.28.1": true
   }
 }

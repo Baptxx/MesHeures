@@ -271,6 +271,15 @@ export function currentYear(): number {
 // Solde d'heures cumulé : solde initial + somme des écarts (jour travaillé réel - objectif)
 // pour chaque jour déjà saisi (passé ou aujourd'hui) tombant sur un jour travaillé.
 // Les jours d'absence n'apparaissent pas dans `entries` : ils sont neutres (ni + ni -).
+// Écart d'un jour par rapport à l'objectif. En télétravail, le surplus n'est jamais
+// crédité (plafonné à 0) car les heures supplémentaires n'y sont pas autorisées ;
+// un déficit reste en revanche décompté normalement.
+export function dayDeltaContribution(total: number | null, goalMinutes: number, isRemote: boolean): number {
+  if (total === null) return -goalMinutes
+  const raw = total - goalMinutes
+  return isRemote ? Math.min(raw, 0) : raw
+}
+
 export function calcRunningBalance(
   entries: Record<string, DayEntry>,
   settings: { dailyGoalMinutes: number; workDays: number[]; initialBalanceMinutes: number },
@@ -284,7 +293,7 @@ export function calcRunningBalance(
     if (!settings.workDays.includes(isoDay)) continue
     const { total } = calcDurations(entry)
     if (total === null) continue
-    balance += total - settings.dailyGoalMinutes
+    balance += dayDeltaContribution(total, settings.dailyGoalMinutes, entry.isRemote)
   }
   return balance
 }

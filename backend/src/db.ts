@@ -131,6 +131,12 @@ if (!entriesExists) {
   migrate()
 }
 
+// Ajout de la colonne is_remote (télétravail) sur une base entries pré-existante
+const entriesColumnsAfterMigration = db.prepare(`PRAGMA table_info(entries)`).all() as { name: string }[]
+if (!entriesColumnsAfterMigration.some(c => c.name === 'is_remote')) {
+  db.exec(`ALTER TABLE entries ADD COLUMN is_remote INTEGER NOT NULL DEFAULT 0`)
+}
+
 export interface UserRow {
   id: number
   email: string
@@ -145,6 +151,7 @@ export interface EntryRow {
   depart_midi: string
   arivee_midi: string
   depart_soir: string
+  is_remote: number
   updated_at: string
 }
 
@@ -191,14 +198,15 @@ export const userStmts = {
 export const stmts = {
   getAll: db.prepare<[number], EntryRow>('SELECT * FROM entries WHERE user_id = ? ORDER BY date DESC'),
   getOne: db.prepare<[number, string], EntryRow>('SELECT * FROM entries WHERE user_id = ? AND date = ?'),
-  upsert: db.prepare<[number, string, string, string, string, string], void>(`
-    INSERT INTO entries (user_id, date, arrivee, depart_midi, arivee_midi, depart_soir, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+  upsert: db.prepare<[number, string, string, string, string, string, number], void>(`
+    INSERT INTO entries (user_id, date, arrivee, depart_midi, arivee_midi, depart_soir, is_remote, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
     ON CONFLICT(user_id, date) DO UPDATE SET
       arrivee     = excluded.arrivee,
       depart_midi = excluded.depart_midi,
       arivee_midi = excluded.arivee_midi,
       depart_soir = excluded.depart_soir,
+      is_remote   = excluded.is_remote,
       updated_at  = excluded.updated_at
   `),
   delete: db.prepare<[number, string], void>('DELETE FROM entries WHERE user_id = ? AND date = ?'),
